@@ -122,12 +122,18 @@ function loadPuzzleForDate(date) {
   renderBoard();
 }
 
+function minSelectableDate() {
+  const today = todayLocal();
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate() - 14);
+}
+
 function onDateChange(value) {
   if (!value) return;
   const [y, m, d] = value.split('-').map(Number);
   const picked = new Date(y, m - 1, d);
   const today = todayLocal();
-  if (picked.getTime() > today.getTime()) {
+  const minDate = minSelectableDate();
+  if (picked.getTime() > today.getTime() || picked.getTime() < minDate.getTime()) {
     document.getElementById('date-picker').value = dateToISO(today);
     return;
   }
@@ -139,6 +145,7 @@ function initDatePicker() {
   const today = todayLocal();
   picker.value = dateToISO(today);
   picker.max = dateToISO(today);
+  picker.min = dateToISO(minSelectableDate());
 }
 
 function loadTodaysPuzzle() {
