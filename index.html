@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eagles StatPad</title>
+  <style>
+    :root {
+      --green: #004C54;
+      --silver: #A5ACAF;
+      --bg: #1a1a1a;
+      --bg2: #252525;
+      --bg3: #2f2f2f;
+      --white: #ffffff;
+      --gold: #c8a800;
+      --success-bg: #1c2e1c;
+      --add-green: #2d6a2d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--white); font-family: Arial, sans-serif; min-height: 100vh; }
+
+    header {
+      background: var(--green);
+      padding: 14px 24px;
+      border-bottom: 2px solid var(--silver);
+    }
+    .logo { font-size: 20px; font-weight: 900; letter-spacing: 2px; }
+    .logo span { color: var(--silver); }
+
+    .scoreboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      text-align: center;
+      padding: 20px 16px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .score-block { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .score-label { font-size: 10px; letter-spacing: 2px; color: var(--silver); text-transform: uppercase; }
+    .score-value { font-size: 38px; font-weight: 900; line-height: 1; }
+    .category-value { font-size: 20px; margin-top: 6px; }
+
+    .date-bar {
+      max-width: 700px;
+      margin: 0 auto 12px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .date-bar-label { font-size: 11px; color: var(--silver); letter-spacing: 1px; text-transform: uppercase; }
+    input.date-picker {
+      background: var(--bg3);
+      color: var(--white);
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color-scheme: dark;
+    }
+    input.date-picker:focus { outline: none; border-color: var(--green); }
+
+    .completion-banner {
+      max-width: 700px;
+      margin: 0 auto 16px;
+      padding: 18px 16px;
+      background: linear-gradient(135deg, var(--green), #006972);
+      border: 1px solid var(--silver);
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+    }
+    .banner-title { font-size: 11px; letter-spacing: 3px; color: var(--silver); font-weight: 700; }
+    .banner-score { font-size: 44px; font-weight: 900; color: var(--white); line-height: 1; margin-top: 6px; }
+    .banner-label { font-size: 10px; letter-spacing: 2px; color: var(--silver); margin-top: 4px; }
+    .banner-msg { font-size: 12px; color: var(--white); margin-top: 10px; opacity: 0.85; }
+
+    .board {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 0 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      background: var(--bg2);
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 90px;
+      transition: min-height 0.2s;
+    }
+    .row.completed { min-height: 160px; }
+    .row.completed { background: var(--success-bg); }
+
+    .row-meta {
+      background: var(--bg3);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      border-right: 1px solid #333;
+    }
+    .row-qualifier { font-size: 12px; font-weight: 700; color: var(--silver); text-transform: uppercase; letter-spacing: 0.5px; }
+    .row-badge {
+      display: inline-block;
+      background: var(--gold);
+      color: #000;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      align-self: flex-start;
+    }
+
+    .row-action {
+      padding: 14px;
+      display: flex;
+      align-items: center;
+    }
+
+    .add-btn {
+      background: var(--add-green);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .add-btn:hover { background: #3a8a3a; }
+
+    .input-form { display: none; flex-direction: column; gap: 8px; width: 100%; }
+    .input-form.open { display: flex; }
+
+    .input-row { display: flex; gap: 8px; align-items: flex-start; }
+    .input-wrap { position: relative; flex: 1; }
+
+    input.player-input {
+      width: 100%;
+      background: #333;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #fff;
+      padding: 9px 12px;
+      font-size: 13px;
+    }
+    input.player-input:focus { outline: none; border-color: var(--green); }
+
+    select.year-select {
+      background: #333;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #fff;
+      padding: 9px 8px;
+      font-size: 13px;
+      width: 85px;
+    }
+    select.year-select:focus { outline: none; border-color: var(--green); }
+
+    .go-btn {
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0; right: 0;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      z-index: 20;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .suggestion-item { padding: 8px 12px; font-size: 13px; cursor: pointer; }
+    .suggestion-item:hover { background: #3a3a3a; }
+
+    .error-msg { color: #ff6b6b; font-size: 11px; }
+
+    .result-block { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .result-summary { display: flex; justify-content: space-between; align-items: flex-start; }
+    .result-name { font-size: 15px; font-weight: 700; }
+    .result-year-label { font-size: 11px; color: var(--silver); }
+    .result-pct { font-size: 10px; color: var(--silver); margin-top: 3px; }
+    .result-stat-block { text-align: right; }
+    .result-stat { font-size: 30px; font-weight: 900; color: #4caf50; line-height: 1; }
+    .result-stat-label { font-size: 10px; color: #aaa; text-align: right; }
+
+    .leaderboard { border-top: 1px solid #333; padding-top: 8px; }
+    .lb-header { font-size: 9px; letter-spacing: 2px; color: var(--silver); text-transform: uppercase; margin-bottom: 5px; }
+    .lb-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; color: #bbb; }
+    .lb-row-highlight { color: #4caf50; font-weight: 700; }
+    .lb-rank { width: 14px; color: #666; font-size: 11px; }
+    .lb-name { flex: 1; }
+    .lb-year { width: 36px; color: #777; font-size: 11px; }
+    .lb-val { width: 40px; text-align: right; font-weight: 700; }
+
+    .footer {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 0 16px 32px;
+      display: flex;
+      justify-content: center;
+    }
+    .how-btn {
+      background: var(--bg3);
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 24px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">EAGLES <span>STATPAD</span></div>
+</header>
+
+<div class="scoreboard">
+  <div class="score-block">
+    <div class="score-value category-value" id="display-category">--</div>
+    <div class="score-label">CATEGORY</div>
+  </div>
+  <div class="score-block">
+    <div class="score-value" id="display-score">0</div>
+    <div class="score-label">TOTAL SCORE</div>
+  </div>
+  <div class="score-block">
+    <div class="score-value" id="display-guesses">0</div>
+    <div class="score-label">TOTAL GUESSES</div>
+  </div>
+</div>
+
+<div class="date-bar">
+  <span class="date-bar-label">Date:</span>
+  <input type="date" class="date-picker" id="date-picker" onchange="onDateChange(this.value)" />
+</div>
+
+<div class="completion-banner" id="completion-banner"></div>
+
+<div class="board" id="board"></div>
+
+<div class="footer">
+  <button class="how-btn" onclick="showHelp()">? HOW TO PLAY</button>
+</div>
+
+<script src="data.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
