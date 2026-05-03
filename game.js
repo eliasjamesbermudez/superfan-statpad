@@ -5,45 +5,62 @@ function yearInEra(year, eraName) {
   return range && year >= range[0] && year <= range[1];
 }
 
-function playerMeetsConstraints(player, year, constraints, statKey) {
-  const season = player.seasons[year];
-  if (!season || season[statKey] === undefined) return false;
+function playerMeetsPlayerConstraints(player, c) {
+  if (c.position && player.position !== c.position) return false;
 
-  if (constraints.era && !yearInEra(year, constraints.era)) return false;
-
-  if (constraints.era_any) {
-    const inAny = constraints.era_any.some(e => yearInEra(year, e));
-    if (!inAny) return false;
-  }
-
-  if (constraints.yearMin !== undefined && year < constraints.yearMin) return false;
-  if (constraints.yearMax !== undefined && year > constraints.yearMax) return false;
-
-  if (constraints.position && player.position !== constraints.position) return false;
-
-  if (constraints.position_group) {
-    const group = POSITION_GROUPS[constraints.position_group] || [];
+  if (c.position_group) {
+    const group = POSITION_GROUPS[c.position_group] || [];
     if (!group.includes(player.position)) return false;
   }
 
-  if (constraints.draftRound !== undefined && player.draftRound !== constraints.draftRound) return false;
-  if (constraints.draftRound_not !== undefined && player.draftRound === constraints.draftRound_not) return false;
+  if (c.draftRound !== undefined && player.draftRound !== c.draftRound) return false;
+  if (c.draftRound_not !== undefined && player.draftRound === c.draftRound_not) return false;
 
-  if (constraints.draftedBy && player.draftedBy !== constraints.draftedBy) return false;
-  if (constraints.draftedBy_not && player.draftedBy === constraints.draftedBy_not) return false;
+  if (c.draftedBy && player.draftedBy !== c.draftedBy) return false;
+  if (c.draftedBy_not && player.draftedBy === c.draftedBy_not) return false;
 
-  if (constraints.superBowl && !player.superBowl.includes(constraints.superBowl)) return false;
+  if (c.superBowl && !player.superBowl.includes(c.superBowl)) return false;
 
   return true;
+}
+
+function yearMeetsYearConstraints(year, c) {
+  if (c.era && !yearInEra(year, c.era)) return false;
+  if (c.era_any) {
+    const ok = c.era_any.some(e => yearInEra(year, e));
+    if (!ok) return false;
+  }
+  if (c.yearMin !== undefined && year < c.yearMin) return false;
+  if (c.yearMax !== undefined && year > c.yearMax) return false;
+  return true;
+}
+
+function statValue(player, year, statKey) {
+  const s = player.seasons[year];
+  return s ? (s[statKey] ?? 0) : 0;
+}
+
+// NFL seasons span two calendar years (Sept-Feb). Display as "YYYY-YYYY".
+function formatSeason(year) {
+  return `${year}-${year + 1}`;
+}
+
+function playerYearRange(player) {
+  const years = Object.keys(player.seasons).map(Number).sort((a, b) => a - b);
+  if (!years.length) return '';
+  const first = years[0];
+  const last = years[years.length - 1];
+  if (first === last) return formatSeason(first);
+  return `${first}-${last + 1}`;
 }
 
 function getValidAnswers(rowConstraints, statKey) {
   const answers = [];
   for (const player of PLAYERS) {
+    if (!playerMeetsPlayerConstraints(player, rowConstraints)) continue;
     for (const year of Object.keys(player.seasons).map(Number)) {
-      if (playerMeetsConstraints(player, year, rowConstraints, statKey)) {
-        answers.push({ player, year, value: player.seasons[year][statKey] });
-      }
+      if (!yearMeetsYearConstraints(year, rowConstraints)) continue;
+      answers.push({ player, year, value: statValue(player, year, statKey) });
     }
   }
   return answers.sort((a, b) => b.value - a.value);
@@ -250,7 +267,7 @@ function renderResult(i) {
       <div class="lb-row${isUser ? ' lb-row-highlight' : ''}">
         <span class="lb-rank">${rank + 1}.</span>
         <span class="lb-name">${a.player.name}</span>
-        <span class="lb-year">${a.year}</span>
+        <span class="lb-year">${formatSeason(a.year)}</span>
         <span class="lb-val">${a.value}</span>
       </div>`;
   }).join('');
@@ -260,7 +277,7 @@ function renderResult(i) {
       <div class="result-summary">
         <div>
           <div class="result-name">${state.playerName}</div>
-          <div class="result-year-label">${state.year}</div>
+          <div class="result-year-label">${formatSeason(state.year)}</div>
           <div class="result-pct">${pct}th percentile</div>
         </div>
         <div class="result-stat-block">
@@ -287,7 +304,6 @@ function openInput(i) {
 function handleAutocomplete(i) {
   const input = document.getElementById(`player-input-${i}`);
   const list = document.getElementById(`suggestions-${i}`);
-  const yearSel = document.getElementById(`year-select-${i}`);
   const query = input.value.toLowerCase().trim();
 
   if (query.length < 2) { list.style.display = 'none'; return; }
@@ -300,7 +316,9 @@ function handleAutocomplete(i) {
   matches.forEach(player => {
     const item = document.createElement('div');
     item.className = 'suggestion-item';
-    item.textContent = player.name;
+    item.innerHTML = `<span class="suggestion-name"></span><span class="suggestion-years"></span>`;
+    item.querySelector('.suggestion-name').textContent = player.name;
+    item.querySelector('.suggestion-years').textContent = playerYearRange(player);
     item.onmousedown = (e) => {
       e.preventDefault();
       input.value = player.name;
@@ -313,24 +331,28 @@ function handleAutocomplete(i) {
 
 function populateYears(i, player) {
   const yearSel = document.getElementById(`year-select-${i}`);
+  const errorEl = document.getElementById(`error-${i}`);
   const row = currentPuzzle.rows[i];
+  const stat = currentPuzzle.statKey;
 
   const validYears = Object.keys(player.seasons)
     .map(Number)
-    .filter(y => playerMeetsConstraints(player, y, row.constraints, currentPuzzle.statKey))
-    .sort((a, b) => {
-      const av = player.seasons[a][currentPuzzle.statKey];
-      const bv = player.seasons[b][currentPuzzle.statKey];
-      return bv - av;
-    });
+    .filter(y => yearMeetsYearConstraints(y, row.constraints))
+    .sort((a, b) => statValue(player, b, stat) - statValue(player, a, stat));
 
   yearSel.innerHTML = '<option value="">Year</option>';
   validYears.forEach(y => {
     const opt = document.createElement('option');
     opt.value = y;
-    opt.textContent = y;
+    opt.textContent = formatSeason(y);
     yearSel.appendChild(opt);
   });
+
+  if (!validYears.length) {
+    errorEl.textContent = `${player.name} has no seasons matching this row's year requirements.`;
+  } else {
+    errorEl.textContent = '';
+  }
 }
 
 function submitRow(i) {
@@ -344,15 +366,19 @@ function submitRow(i) {
   if (!year) { errorEl.textContent = 'Select a year.'; return; }
 
   const player = PLAYERS.find(p => p.name.toLowerCase() === playerName.toLowerCase());
-  if (!player) { errorEl.textContent = 'Player not found — try the dropdown.'; return; }
+  if (!player) { errorEl.textContent = 'Player not found - try the dropdown.'; return; }
 
   const row = currentPuzzle.rows[i];
-  if (!playerMeetsConstraints(player, year, row.constraints, currentPuzzle.statKey)) {
-    errorEl.textContent = "That player/year doesn't meet this row's requirements.";
+  if (!playerMeetsPlayerConstraints(player, row.constraints)) {
+    errorEl.textContent = "That player doesn't meet this row's requirements.";
+    return;
+  }
+  if (!yearMeetsYearConstraints(year, row.constraints)) {
+    errorEl.textContent = "That year doesn't meet this row's requirements.";
     return;
   }
 
-  const value = player.seasons[year][currentPuzzle.statKey];
+  const value = statValue(player, year, currentPuzzle.statKey);
   rowStates[i] = { submitted: true, playerName: player.name, year, value };
 
   totalScore += value;
