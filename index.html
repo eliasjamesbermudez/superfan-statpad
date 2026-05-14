@@ -251,6 +251,92 @@
     .credit a { color: var(--silver); text-decoration: underline; }
     .credit a:hover { color: var(--white); }
 
+    .footer-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-card {
+      background: var(--bg2);
+      border: 1px solid #3a3a3a;
+      border-radius: 10px;
+      padding: 22px;
+      width: 100%;
+      max-width: 460px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: var(--silver);
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .modal-close:hover { color: var(--white); }
+
+    .modal-title { font-size: 18px; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; }
+    .modal-sub { font-size: 13px; color: var(--silver); margin-bottom: 16px; line-height: 1.4; }
+
+    .field-label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: var(--silver);
+      text-transform: uppercase;
+      margin: 12px 0 6px;
+    }
+    .modal-card textarea,
+    .modal-card input[type="email"] {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: var(--white);
+      padding: 9px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+    }
+    .modal-card textarea:focus,
+    .modal-card input[type="email"]:focus { outline: none; border-color: var(--green); }
+    .modal-card textarea { min-height: 110px; }
+    .honeypot { display: none !important; }
+
+    .modal-actions { margin-top: 18px; display: flex; justify-content: flex-end; }
+    .submit-btn {
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 22px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+    }
+    .submit-btn:hover { background: #006972; }
+    .submit-btn:disabled { background: #444; cursor: not-allowed; }
+
+    .modal-status { margin-top: 12px; font-size: 13px; min-height: 18px; }
+    .modal-status.success { color: #4caf50; }
+    .modal-status.error { color: #ff6b6b; }
+
     @media (max-width: 600px) {
       header { padding: 12px 16px; }
       .logo { font-size: 17px; letter-spacing: 1.5px; }
@@ -292,6 +378,14 @@
       .result-name { font-size: 14px; }
 
       .footer { padding: 0 12px 28px; }
+
+      .modal-overlay { padding: 0; align-items: flex-end; }
+      .modal-card {
+        max-width: 100%;
+        max-height: 92vh;
+        border-radius: 14px 14px 0 0;
+        padding: 20px 18px 24px;
+      }
     }
   </style>
 </head>
@@ -326,8 +420,33 @@
 <div class="board" id="board"></div>
 
 <div class="footer">
-  <button class="how-btn" onclick="showHelp()">? HOW TO PLAY</button>
+  <div class="footer-actions">
+    <button class="how-btn" onclick="showHelp()">? HOW TO PLAY</button>
+    <button class="how-btn" onclick="openFeedback()">SEND FEEDBACK</button>
+  </div>
   <div class="credit">Inspired by <a href="https://www.statpadgame.com/" target="_blank" rel="noopener">StatPad</a></div>
+</div>
+
+<div class="modal-overlay" id="feedback-modal" aria-hidden="true" onclick="onOverlayClick(event)">
+  <div class="modal-card" role="dialog" aria-labelledby="feedback-title" aria-modal="true">
+    <button class="modal-close" onclick="closeFeedback()" aria-label="Close">&times;</button>
+    <div class="modal-title" id="feedback-title">SEND FEEDBACK</div>
+    <div class="modal-sub">Bug, idea, or just letting me know what you think. It all comes straight to me.</div>
+    <form id="feedback-form" onsubmit="submitFeedback(event)">
+      <label class="field-label" for="fb-message">Your message</label>
+      <textarea id="fb-message" name="message" required placeholder="What's on your mind?"></textarea>
+      <label class="field-label" for="fb-email">Your email (optional)</label>
+      <input type="email" id="fb-email" name="reply_email" placeholder="Only if you want a reply">
+      <input type="text" name="_honey" class="honeypot" tabindex="-1" autocomplete="off">
+      <input type="hidden" name="_subject" value="Hometeam Statpad feedback">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_template" value="table">
+      <div class="modal-actions">
+        <button type="submit" class="submit-btn" id="fb-submit">Send</button>
+      </div>
+      <div class="modal-status" id="fb-status" role="status" aria-live="polite"></div>
+    </form>
+  </div>
 </div>
 
 <script src="game.js"></script>

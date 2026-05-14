@@ -432,6 +432,13 @@ function submitRow(i) {
   if (!playerName) { errorEl.textContent = 'Enter a player name.'; return; }
   if (!yearSelValue) { errorEl.textContent = 'Select a year.'; return; }
 
+  // Every submit with both fields filled counts toward TOTAL GUESSES, even
+  // ones that get blocked by constraints below. The tile tracks user effort,
+  // not just completed rows.
+  totalGuesses++;
+  updateScoreboard();
+  saveProgress();
+
   const player = PLAYERS.find(p => p.name.toLowerCase() === playerName.toLowerCase());
   if (!player) { errorEl.textContent = 'Player not found - try the dropdown.'; return; }
 
@@ -465,7 +472,6 @@ function submitRow(i) {
   rowStates[i] = { submitted: true, playerName: player.name, year, team, value };
 
   totalScore += value;
-  totalGuesses++;
   updateScoreboard();
 
   document.getElementById(`row-${i}`).classList.add('completed');
@@ -487,6 +493,84 @@ function showHelp() {
     'ANYTIME IN CAREER: the qualifier just has to be true at some point in their career.\n\n' +
     'The percentile shows how your answer ranks against all valid answers.'
   );
+}
+
+// ── FEEDBACK ──────────────────────────────────────────────────────────────────
+
+const FEEDBACK_ENDPOINT = 'https://formsubmit.co/ajax/eliasjamesbermudez@gmail.com';
+
+function openFeedback() {
+  const modal = document.getElementById('feedback-modal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.addEventListener('keydown', onFeedbackKeydown);
+  setTimeout(() => document.getElementById('fb-message').focus(), 50);
+}
+
+function closeFeedback() {
+  const modal = document.getElementById('feedback-modal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.removeEventListener('keydown', onFeedbackKeydown);
+}
+
+function onFeedbackKeydown(e) {
+  if (e.key === 'Escape') closeFeedback();
+}
+
+function onOverlayClick(e) {
+  // Only close when the dark backdrop is clicked, not when clicks bubble up
+  // from inside the card.
+  if (e.target.id === 'feedback-modal') closeFeedback();
+}
+
+async function submitFeedback(event) {
+  event.preventDefault();
+  const form = document.getElementById('feedback-form');
+  const submitBtn = document.getElementById('fb-submit');
+  const statusEl = document.getElementById('fb-status');
+
+  // Honeypot: if a bot filled the hidden field, silently pretend success.
+  if (form.elements['_honey'].value) {
+    statusEl.className = 'modal-status success';
+    statusEl.textContent = 'Thanks for the feedback!';
+    return;
+  }
+
+  statusEl.className = 'modal-status';
+  statusEl.textContent = '';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending…';
+
+  const payload = {
+    message: form.elements['message'].value.trim(),
+    reply_email: form.elements['reply_email'].value.trim(),
+    _subject: form.elements['_subject'].value,
+    _template: form.elements['_template'].value,
+    page_url: location.href,
+  };
+
+  try {
+    const res = await fetch(FEEDBACK_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.success === 'false') throw new Error(data.message || 'Send failed');
+
+    statusEl.className = 'modal-status success';
+    statusEl.textContent = 'Thanks, feedback sent.';
+    form.reset();
+    setTimeout(closeFeedback, 1500);
+  } catch (err) {
+    console.error('Feedback submission failed:', err);
+    statusEl.className = 'modal-status error';
+    statusEl.textContent = 'Couldn\'t send. Try again or email me directly.';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send';
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
