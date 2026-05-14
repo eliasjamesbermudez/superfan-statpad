@@ -1,3 +1,12 @@
+// ── DATA (loaded async at init) ──────────────────────────────────────────────
+
+let MANIFEST = null;
+let PLAYERS = [];
+let PUZZLES = [];
+let ERAS = {};
+let POSITION_GROUPS = {};
+let ACTIVE_TEAM = null; // e.g. { id: "eagles", name: "Philadelphia Eagles", short_name: "Eagles" }
+
 // ── CONSTRAINT ENGINE ─────────────────────────────────────────────────────────
 
 function yearInEra(year, eraName) {
@@ -5,6 +14,8 @@ function yearInEra(year, eraName) {
   return range && year >= range[0] && year <= range[1];
 }
 
+// Player-level constraints: filters the player pool. These never depend on a
+// specific season.
 function playerMeetsPlayerConstraints(player, c) {
   if (c.position && player.position !== c.position) return false;
 
@@ -13,31 +24,67 @@ function playerMeetsPlayerConstraints(player, c) {
     if (!group.includes(player.position)) return false;
   }
 
-  if (c.draftRound !== undefined && player.draftRound !== c.draftRound) return false;
-  if (c.draftRound_not !== undefined && player.draftRound === c.draftRound_not) return false;
+  if (c.draft_round !== undefined && player.draftRound !== c.draft_round) return false;
+  if (c.draft_round_not !== undefined && player.draftRound === c.draft_round_not) return false;
 
-  if (c.draftedBy && player.draftedBy !== c.draftedBy) return false;
-  if (c.draftedBy_not && player.draftedBy === c.draftedBy_not) return false;
+  if (c.drafted_by && player.draftedBy !== c.drafted_by) return false;
+  if (c.drafted_by_not && player.draftedBy === c.drafted_by_not) return false;
 
-  if (c.superBowl && !player.superBowl.includes(c.superBowl)) return false;
-
-  return true;
-}
-
-function yearMeetsYearConstraints(year, c) {
-  if (c.era && !yearInEra(year, c.era)) return false;
-  if (c.era_any) {
-    const ok = c.era_any.some(e => yearInEra(year, e));
-    if (!ok) return false;
+  if (c.super_bowl !== undefined) {
+    const wins = (player.career && player.career.super_bowls) || [];
+    if (!wins.includes(c.super_bowl)) return false;
   }
-  if (c.yearMin !== undefined && year < c.yearMin) return false;
-  if (c.yearMax !== undefined && year > c.yearMax) return false;
+
+  // Career-level stat thresholds (e.g. career_stat_gt: { rec: 500 })
+  if (c.career_stat_gt) {
+    for (const [k, v] of Object.entries(c.career_stat_gt)) {
+      if (((player.career || {})[k] || 0) <= v) return false;
+    }
+  }
+  if (c.career_stat_lt) {
+    for (const [k, v] of Object.entries(c.career_stat_lt)) {
+      if (((player.career || {})[k] || 0) >= v) return false;
+    }
+  }
+
   return true;
 }
 
-function statValue(player, year, statKey) {
-  const s = player.seasons[year];
-  return s ? (s[statKey] ?? 0) : 0;
+// Season-level constraints: filters individual season-rows.
+function seasonMeetsConstraints(season, c) {
+  if (c.team && season.team !== c.team) return false;
+  if (c.year_min !== undefined && season.year < c.year_min) return false;
+  if (c.year_max !== undefined && season.year > c.year_max) return false;
+  if (c.era && !yearInEra(season.year, c.era)) return false;
+  if (c.era_any && !c.era_any.some(e => yearInEra(season.year, e))) return false;
+  return true;
+}
+
+// Returns a short explanation of why a season failed the row constraints, or
+// null if it passes. Used to give the user a clear "your pick didn't qualify
+// because..." message instead of a generic 0-point result.
+function getSeasonFailReason(season, c, player) {
+  const seasonStr = formatSeason(season.year);
+  if (c.team && season.team !== c.team) {
+    return `${player.name} wasn't on the ${c.team} in ${seasonStr}.`;
+  }
+  if (c.era && !yearInEra(season.year, c.era)) {
+    return `${seasonStr} wasn't in the ${c.era} era.`;
+  }
+  if (c.era_any && !c.era_any.some(e => yearInEra(season.year, e))) {
+    return `${seasonStr} wasn't in the ${c.era_any.join(' or ')} era.`;
+  }
+  if (c.year_min !== undefined && season.year < c.year_min) {
+    return `${seasonStr} is too early — must be ${c.year_min} or later.`;
+  }
+  if (c.year_max !== undefined && season.year > c.year_max) {
+    return `${seasonStr} is too late — must be ${c.year_max} or earlier.`;
+  }
+  return null;
+}
+
+function statValue(season, statKey) {
+  return (season && season[statKey]) ? season[statKey] : 0;
 }
 
 // NFL seasons span two calendar years (Sept-Feb). Display as "YYYY-YYYY".
@@ -46,21 +93,22 @@ function formatSeason(year) {
 }
 
 function playerYearRange(player) {
-  const years = Object.keys(player.seasons).map(Number).sort((a, b) => a - b);
-  if (!years.length) return '';
+  if (!player.seasons || !player.seasons.length) return '';
+  const years = player.seasons.map(s => s.year).sort((a, b) => a - b);
   const first = years[0];
   const last = years[years.length - 1];
   if (first === last) return formatSeason(first);
   return `${first}-${last + 1}`;
 }
 
+// Returns [{ player, season, value }, ...] sorted by value desc.
 function getValidAnswers(rowConstraints, statKey) {
   const answers = [];
   for (const player of PLAYERS) {
     if (!playerMeetsPlayerConstraints(player, rowConstraints)) continue;
-    for (const year of Object.keys(player.seasons).map(Number)) {
-      if (!yearMeetsYearConstraints(year, rowConstraints)) continue;
-      answers.push({ player, year, value: statValue(player, year, statKey) });
+    for (const season of player.seasons) {
+      if (!seasonMeetsConstraints(season, rowConstraints)) continue;
+      answers.push({ player, season, value: statValue(season, statKey) });
     }
   }
   return answers.sort((a, b) => b.value - a.value);
@@ -98,8 +146,9 @@ function getPuzzleIndexForDate(date) {
   return daysSinceEpoch % PUZZLES.length;
 }
 
+const SCHEMA_VERSION = 5; // bump when row-state shape changes; invalidates old saves
 function getDateKey(date) {
-  return `statpad-${dateToISO(date)}`;
+  return `statpad-${ACTIVE_TEAM.id}-v${SCHEMA_VERSION}-${dateToISO(date)}`;
 }
 
 function saveProgress() {
@@ -165,11 +214,6 @@ function initDatePicker() {
   picker.min = dateToISO(minSelectableDate());
 }
 
-function loadTodaysPuzzle() {
-  initDatePicker();
-  loadPuzzleForDate(todayLocal());
-}
-
 function updateScoreboard() {
   document.getElementById('display-category').textContent = currentPuzzle.category;
   document.getElementById('display-score').textContent = totalScore.toLocaleString();
@@ -214,8 +258,8 @@ function renderRow(i) {
 
   el.innerHTML = `
     <div class="row-meta">
-      <div class="row-qualifier">${row.qualifierText}</div>
-      <div class="row-badge">${row.qualifierBadge}</div>
+      <div class="row-qualifier">${row.qualifier_text}</div>
+      <div class="row-badge">${row.qualifier_badge}</div>
     </div>
     <div class="row-action" id="row-action-${i}">
       ${state.submitted ? renderResult(i) : renderInputArea(i)}
@@ -253,21 +297,36 @@ function renderInputArea(i) {
   `;
 }
 
+// Year-only label for inputs: keeps the user guessing. The team is intentionally
+// hidden in the picker so we don't telegraph which years pass the row's
+// constraints. The team is revealed in renderResult after submission.
+function yearOnlyLabel(season) {
+  return formatSeason(season.year);
+}
+
+// Year-with-team label used in the result/leaderboard after submission — that's
+// where it becomes useful information rather than a hint.
+function seasonLabel(season) {
+  return `${formatSeason(season.year)} (${season.team})`;
+}
+
 function renderResult(i) {
   const state = rowStates[i];
   const row = currentPuzzle.rows[i];
-  const allAnswers = getValidAnswers(row.constraints, currentPuzzle.statKey);
+  const allAnswers = getValidAnswers(row.constraints, currentPuzzle.stat_key);
   const pct = getPercentile(state.value, allAnswers);
-  const label = currentPuzzle.statKey.replace(/_/g, ' ').toUpperCase();
+  const label = currentPuzzle.stat_key.replace(/_/g, ' ').toUpperCase();
   const top5 = allAnswers.slice(0, 5);
 
   const leaderboardRows = top5.map((a, rank) => {
-    const isUser = a.player.name === state.playerName && a.year === state.year;
+    const isUser = a.player.name === state.playerName
+                && a.season.year === state.year
+                && a.season.team === state.team;
     return `
       <div class="lb-row${isUser ? ' lb-row-highlight' : ''}">
         <span class="lb-rank">${rank + 1}.</span>
         <span class="lb-name">${a.player.name}</span>
-        <span class="lb-year">${formatSeason(a.year)}</span>
+        <span class="lb-year">${seasonLabel(a.season)}</span>
         <span class="lb-val">${a.value}</span>
       </div>`;
   }).join('');
@@ -277,7 +336,7 @@ function renderResult(i) {
       <div class="result-summary">
         <div>
           <div class="result-name">${state.playerName}</div>
-          <div class="result-year-label">${formatSeason(state.year)}</div>
+          <div class="result-year-label">${formatSeason(state.year)} (${state.team})</div>
           <div class="result-pct">${pct}th percentile</div>
         </div>
         <div class="result-stat-block">
@@ -329,27 +388,35 @@ function handleAutocomplete(i) {
   });
 }
 
+// Encodes a season as "year|team" so it round-trips through the <option value>.
+function encodeSeason(season) {
+  return `${season.year}|${season.team}`;
+}
+
+function decodeSeasonValue(value) {
+  const [yearStr, team] = value.split('|');
+  return { year: parseInt(yearStr, 10), team };
+}
+
 function populateYears(i, player) {
   const yearSel = document.getElementById(`year-select-${i}`);
   const errorEl = document.getElementById(`error-${i}`);
-  const row = currentPuzzle.rows[i];
-  const stat = currentPuzzle.statKey;
 
-  const validYears = Object.keys(player.seasons)
-    .map(Number)
-    .filter(y => yearMeetsYearConstraints(y, row.constraints))
-    .sort((a, b) => statValue(player, b, stat) - statValue(player, a, stat));
+  // Show every year of the player's career, chronologically. We intentionally
+  // don't filter to "valid for this row" or sort by stat — that would
+  // telegraph the right answer. Wrong years are allowed; they just score 0.
+  const seasons = [...player.seasons].sort((a, b) => a.year - b.year);
 
   yearSel.innerHTML = '<option value="">Year</option>';
-  validYears.forEach(y => {
+  seasons.forEach(s => {
     const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = formatSeason(y);
+    opt.value = encodeSeason(s);
+    opt.textContent = yearOnlyLabel(s);
     yearSel.appendChild(opt);
   });
 
-  if (!validYears.length) {
-    errorEl.textContent = `${player.name} has no seasons matching this row's year requirements.`;
+  if (!seasons.length) {
+    errorEl.textContent = `${player.name} has no recorded seasons.`;
   } else {
     errorEl.textContent = '';
   }
@@ -357,29 +424,45 @@ function populateYears(i, player) {
 
 function submitRow(i) {
   const playerName = document.getElementById(`player-input-${i}`).value.trim();
-  const year = parseInt(document.getElementById(`year-select-${i}`).value);
+  const yearSelValue = document.getElementById(`year-select-${i}`).value;
   const errorEl = document.getElementById(`error-${i}`);
 
   errorEl.textContent = '';
 
   if (!playerName) { errorEl.textContent = 'Enter a player name.'; return; }
-  if (!year) { errorEl.textContent = 'Select a year.'; return; }
+  if (!yearSelValue) { errorEl.textContent = 'Select a year.'; return; }
 
   const player = PLAYERS.find(p => p.name.toLowerCase() === playerName.toLowerCase());
   if (!player) { errorEl.textContent = 'Player not found - try the dropdown.'; return; }
 
+  // Player-level constraints are non-negotiable: wrong position or wrong draft
+  // is an invalid pick, not a guess. Surface as an error.
   const row = currentPuzzle.rows[i];
   if (!playerMeetsPlayerConstraints(player, row.constraints)) {
     errorEl.textContent = "That player doesn't meet this row's requirements.";
     return;
   }
-  if (!yearMeetsYearConstraints(year, row.constraints)) {
-    errorEl.textContent = "That year doesn't meet this row's requirements.";
+
+  const { year, team } = decodeSeasonValue(yearSelValue);
+  const season = player.seasons.find(s => s.year === year && s.team === team);
+  if (!season) {
+    errorEl.textContent = "Couldn't find that season - try again.";
     return;
   }
 
-  const value = statValue(player, year, currentPuzzle.statKey);
-  rowStates[i] = { submitted: true, playerName: player.name, year, value };
+  // Season-level constraints (era, team, year range) block submission and let
+  // the user pick again. The failure reason — "X wasn't on the Eagles in
+  // 2020-2021" — surfaces in the error spot so they know why it's invalid.
+  // A "poor guess" is a player+season that DO pass constraints but the stat
+  // value happens to be 0; that's accepted (and scores 0).
+  const failReason = getSeasonFailReason(season, row.constraints, player);
+  if (failReason !== null) {
+    errorEl.textContent = failReason;
+    return;
+  }
+
+  const value = statValue(season, currentPuzzle.stat_key);
+  rowStates[i] = { submitted: true, playerName: player.name, year, team, value };
 
   totalScore += value;
   totalGuesses++;
@@ -397,10 +480,10 @@ function submitRow(i) {
 function showHelp() {
   alert(
     'HOW TO PLAY\n\n' +
-    'Pick one Eagles player per row that meets the row\'s requirements.\n\n' +
-    'Submit the player and a year — your score increases by their stat total from that year.\n\n' +
+    `Pick one ${ACTIVE_TEAM.short_name} player per row that meets the row's requirements.\n\n` +
+    'Submit the player and a season - your score increases by their stat total from that season.\n\n' +
     'Try to maximize your total score across all 5 rows.\n\n' +
-    'SAME SEASON: the qualifier must apply to the year you submit.\n' +
+    'SAME SEASON: the qualifier must apply to the season you submit.\n' +
     'ANYTIME IN CAREER: the qualifier just has to be true at some point in their career.\n\n' +
     'The percentile shows how your answer ranks against all valid answers.'
   );
@@ -408,4 +491,29 @@ function showHelp() {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 
-loadTodaysPuzzle();
+async function init() {
+  try {
+    MANIFEST = await fetch('data/manifest.json').then(r => r.json());
+    const teamId = MANIFEST.default_team;
+    ACTIVE_TEAM = MANIFEST.teams.find(t => t.id === teamId);
+
+    const [playersJson, puzzlesJson] = await Promise.all([
+      fetch(`data/${teamId}/players.json`).then(r => r.json()),
+      fetch(`data/${teamId}/puzzles.json`).then(r => r.json()),
+    ]);
+
+    PLAYERS = playersJson;
+    PUZZLES = puzzlesJson.puzzles;
+    ERAS = puzzlesJson.eras || {};
+    POSITION_GROUPS = puzzlesJson.position_groups || {};
+
+    initDatePicker();
+    loadPuzzleForDate(todayLocal());
+  } catch (err) {
+    console.error('Failed to load game data:', err);
+    document.getElementById('board').innerHTML =
+      `<div style="padding:20px;color:#ff6b6b">Failed to load game data. Check the console.</div>`;
+  }
+}
+
+init();
