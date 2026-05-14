@@ -1,0 +1,118 @@
+{
+  "eras": {
+    "Larry Brown": [1999, 2002],
+    "Brett Brown": [2013, 2019]
+  },
+  "position_groups": {
+    "guard":      ["G"],
+    "forward":    ["F"],
+    "big":        ["F", "C"],
+    "frontcourt": ["F", "C"],
+    "backcourt":  ["G"],
+    "all":        ["G", "F", "C"]
+  },
+  "puzzles": [
+    {
+      "id": 1,
+      "category": "POINTS",
+      "stat_key": "pts",
+      "rows": [
+        { "qualifier_text": "LARRY BROWN ERA (1999-2002)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Larry Brown" } },
+        { "qualifier_text": "BRETT BROWN / PROCESS ERA (2013-2019)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Brett Brown" } },
+        { "qualifier_text": "2020-PRESENT SEASONS", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "year_min": 2020 } },
+        { "qualifier_text": "NOT DRAFTED BY 76ERS", "qualifier_badge": "ANYTIME IN CAREER",
+          "constraints": { "drafted_by_not": "76ers" } },
+        { "qualifier_text": "NOT A 1ST ROUND PICK", "qualifier_badge": "ANYTIME IN CAREER",
+          "constraints": { "draft_round_not": 1 } }
+      ]
+    },
+    {
+      "id": 2,
+      "category": "REBOUNDS",
+      "stat_key": "reb",
+      "rows": [
+        { "qualifier_text": "LARRY BROWN ERA (1999-2002)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Larry Brown" } },
+        { "qualifier_text": "BRETT BROWN ERA (2013-2019)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Brett Brown" } },
+        { "qualifier_text": "CENTER", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "position": "C" } },
+        { "qualifier_text": "NOT DRAFTED BY 76ERS", "qualifier_badge": "ANYTIME IN CAREER",
+          "constraints": { "drafted_by_not": "76ers", "position_group": "frontcourt" } },
+        { "qualifier_text": "1ST ROUND PICK", "qualifier_badge": "ANYTIME IN CAREER",
+          "constraints": { "draft_round": 1, "position_group": "frontcourt" } }
+      ]
+    },
+    {
+      "id": 3,
+      "category": "ASSISTS",
+      "stat_key": "ast",
+      "rows": [
+        { "qualifier_text": "LARRY BROWN ERA (1999-2002)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Larry Brown" } },
+        { "qualifier_text": "BRETT BROWN ERA (2013-2019)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Brett Brown" } },
+        { "qualifier_text": "2020-PRESENT SEASONS", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "year_min": 2020 } },
+        { "qualifier_text": "GUARD", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "position": "G" } },
+        { "qualifier_text": "NOT DRAFTED BY 76ERS", "qualifier_badge": "ANYTIME IN CAREER",
+          "constraints": { "drafted_by_not": "76ers", "position_group": "backcourt" } }
+      ]
+    },
+    {
+      "id": 4,
+      "category": "THREES MADE",
+      "stat_key": "fg3_made",
+      "rows": [
+        { "qualifier_text": "BRETT BROWN ERA (2013-2019)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Brett Brown" } },
+        { "qualifier_text": "2020-2022 SEASONS", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "year_min": 2020, "year_max": 2022 } },
+        { "qualifier_text": "2023-PRESENT SEASONS", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "year_min": 2023 } },
+        { "qualifier_text": "GUARD", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "position": "G" } },
+        { "qualifier_text": "NOT DRAFTED BY 76ERS", "qualifier_badge": "ANYTIME IN CAREER",
+          "constraints": { "drafted_by_not": "76ers" } }
+      ]
+    },
+    {
+      "id": 5,
+      "category": "STEALS",
+      "stat_key": "stl",
+      "rows": [
+        { "qualifier_text": "LARRY BROWN ERA (1999-2002)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Larry Brown" } },
+        { "qualifier_text": "BRETT BROWN ERA (2013-2019)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Brett Brown" } },
+        { "qualifier_text": "GUARD", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "position": "G" } },
+        { "qualifier_text": "NOT DRAFTED BY 76ERS", "qualifier_badge": "ANYTIME IN CAREER",
+          "constraints": { "drafted_by_not": "76ers" } },
+        { "qualifier_text": "NOT A 1ST ROUND PICK", "qualifier_badge": "ANYTIME IN CAREER",
+          "constraints": { "draft_round_not": 1 } }
+      ]
+    },
+    {
+      "id": 6,
+      "category": "BLOCKS",
+      "stat_key": "blk",
+      "rows": [
+        { "qualifier_text": "LARRY BROWN ERA (1999-2002)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Larry Brown" } },
+        { "qualifier_text": "BRETT BROWN ERA (2013-2019)", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "era": "Brett Brown" } },
+        { "qualifier_text": "2020-PRESENT SEASONS", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "year_min": 2020 } },
+        { "qualifier_text": "CENTER", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "76ers", "position": "C" } },
+        { "qualifier_text": "NOT DRAFTED BY 76ERS", "qualifier_badge": "ANYTIME IN CAREER",
+          "constraints": { "drafted_by_not": "76ers", "position_group": "frontcourt" } }
+      ]
+    }
+  ]
+}

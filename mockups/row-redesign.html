@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Row redesign mockup v3 — Hometeam Statpad</title>
+<style>
+  :root {
+    --primary: #004C54;
+    --silver: #A5ACAF;
+    --bg: #1a1a1a;
+    --bg2: #252525;
+    --bg3: #2f2f2f;
+    --white: #ffffff;
+    --gold: #c8a800;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px 64px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  h1 { font-size: 18px; letter-spacing: 2px; margin-bottom: 6px; }
+  .sub {
+    font-size: 12px;
+    color: var(--silver);
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+  .sub a { color: var(--primary); text-decoration: underline; }
+  .sub a:hover { filter: brightness(1.4); }
+
+  .variant-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--silver);
+    text-transform: uppercase;
+    margin: 28px 0 8px;
+    font-weight: 600;
+  }
+  .variant-label span { color: var(--white); margin-right: 8px; }
+
+  /* ── Row card: single container holding all slabs + button ─────── */
+  .row {
+    background: var(--bg2);
+    border: 1px solid #2c2c2c;
+    border-radius: 10px;
+    padding: 6px;
+    display: grid;
+    grid-template-columns: minmax(120px, 1.1fr) minmax(96px, 1fr) auto;
+    gap: 6px;
+  }
+  .row.has-filter {
+    grid-template-columns: minmax(120px, 1.1fr) minmax(96px, 1fr) minmax(110px, 1fr) auto;
+  }
+
+  .slab {
+    background: var(--bg3);
+    border-radius: 6px;
+    padding: 10px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 96px;
+    gap: 4px;
+  }
+  .slab-time {
+    background: color-mix(in srgb, var(--primary) 30%, var(--bg3));
+    border: 1px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  }
+
+  .caption {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--silver);
+    text-transform: uppercase;
+    font-weight: 600;
+    line-height: 1.1;
+    margin-bottom: 2px;
+  }
+  .value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: 0.3px;
+    line-height: 1.1;
+  }
+  .value.compact { font-size: 16px; }
+
+  .year-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    gap: 2px;
+  }
+  .year-stack .yr {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--white);
+  }
+  .year-stack .conj {
+    font-size: 11px;
+    color: var(--silver);
+    font-weight: 600;
+  }
+
+  .era-flavor {
+    font-size: 9px;
+    color: var(--gold);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.1;
+    margin-bottom: 3px;
+  }
+
+  .mode-tag {
+    margin-top: 4px;
+    font-size: 8px;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    background: var(--gold);
+    color: #000;
+    line-height: 1.2;
+  }
+
+  /* Add player slab — same shape as the constraint slabs, just team-colored */
+  .add-btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+    min-height: 96px;
+    min-width: 120px;
+  }
+  .add-btn:hover { filter: brightness(1.15); }
+
+  .notes {
+    margin-top: 40px;
+    padding: 18px 20px;
+    background: var(--bg2);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--silver);
+    line-height: 1.6;
+  }
+  .notes strong { color: var(--white); }
+  .notes ul { margin: 10px 0 0 20px; }
+  .notes li { margin-bottom: 6px; }
+
+  /* Mobile: collapse to 3 col, button full width below */
+  @media (max-width: 600px) {
+    .row {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "time pos"
+        "action action";
+    }
+    .row.has-filter {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "time pos"
+        "filter filter"
+        "action action";
+    }
+    .slab-time { grid-area: time; }
+    .slab-position { grid-area: pos; }
+    .slab-filter { grid-area: filter; }
+    .add-btn { grid-area: action; min-height: 52px; min-width: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>ROW REDESIGN MOCKUP v3</h1>
+  <div class="sub">
+    Fixes: row card wraps the whole thing so the add-player button feels like part of the row, not an orphan.
+    Filter-style constraints use a verb-caption / noun-value pattern so the slab reads as a sentence ("Drafted Outside / 1st Round" instead of the cryptic "Draft / Not 1st Rd").
+    No more red tint on negative constraints.
+    <br><br>
+    Open <a href="/index.html" target="_blank">the live game</a> for direct comparison.
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <div class="variant-label"><span>Variant 1.</span> Era + position group, SAME SEASON</div>
+
+  <div class="row">
+    <div class="slab slab-time">
+      <div class="era-flavor">Andy Reid Era</div>
+      <div class="year-stack">
+        <span class="yr">1999</span>
+        <span class="conj">to</span>
+        <span class="yr">2012</span>
+      </div>
+      <span class="mode-tag">Same Season</span>
+    </div>
+    <div class="slab slab-position">
+      <div class="caption">Position</div>
+      <div class="value">Skill</div>
+    </div>
+    <button class="add-btn"><span style="font-size:16px">+</span> add player</button>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <div class="variant-label"><span>Variant 2.</span> Year window + position group, SAME SEASON</div>
+
+  <div class="row">
+    <div class="slab slab-time">
+      <div class="year-stack">
+        <span class="yr">2013</span>
+        <span class="conj">to</span>
+        <span class="yr">2020</span>
+      </div>
+      <span class="mode-tag">Same Season</span>
+    </div>
+    <div class="slab slab-position">
+      <div class="caption">Position</div>
+      <div class="value">Skill</div>
+    </div>
+    <button class="add-btn"><span style="font-size:16px">+</span> add player</button>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <div class="variant-label"><span>Variant 3.</span> ANYTIME + position + draft filter (not 1st round)</div>
+
+  <div class="row has-filter">
+    <div class="slab slab-time">
+      <div class="value compact">Any Year</div>
+      <span class="mode-tag">Anytime in Career</span>
+    </div>
+    <div class="slab slab-position">
+      <div class="caption">Position</div>
+      <div class="value">Skill</div>
+    </div>
+    <div class="slab slab-filter">
+      <div class="caption">Drafted Outside</div>
+      <div class="value">1st Round</div>
+    </div>
+    <button class="add-btn"><span style="font-size:16px">+</span> add player</button>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <div class="variant-label"><span>Variant 4.</span> ANYTIME + position + draft-origin filter (not drafted by Eagles)</div>
+
+  <div class="row has-filter">
+    <div class="slab slab-time">
+      <div class="value compact">Any Year</div>
+      <span class="mode-tag">Anytime in Career</span>
+    </div>
+    <div class="slab slab-position">
+      <div class="caption">Position</div>
+      <div class="value">Skill</div>
+    </div>
+    <div class="slab slab-filter">
+      <div class="caption">Not Drafted By</div>
+      <div class="value">Eagles</div>
+    </div>
+    <button class="add-btn"><span style="font-size:16px">+</span> add player</button>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────────── -->
+  <div class="notes">
+    <strong>What changed from v2:</strong>
+    <ul>
+      <li>Row card wraps everything. All slabs (including the add-player button) sit inside the same outer container with consistent gaps. Button reads as part of the row, not floating beside it.</li>
+      <li>No more red tint on filter slabs — color was adding confusion, not clarity.</li>
+      <li>Filter constraints use a verb-caption / noun-value pattern: "Drafted Outside / 1st Round" and "Not Drafted By / Eagles." Caption carries the question, value carries the answer. Each slab reads as a sentence on its own.</li>
+      <li>Added Variant 4 to show the "not drafted by [team]" case using the same pattern.</li>
+    </ul>
+    <strong>Mobile (≤ 600px):</strong>
+    <ul>
+      <li>Time and Position sit side-by-side on the first line, filter (if present) spans full width on the second line, button spans full width on the bottom.</li>
+      <li>Everything stays inside the row card so the visual cohesion holds at small widths too.</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

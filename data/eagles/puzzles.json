@@ -1,10 +1,6 @@
 {
   "eras": {
-    "Buddy Ryan":    [1986, 1990],
-    "Rich Kotite":   [1991, 1994],
-    "Ray Rhodes":    [1995, 1998],
     "Andy Reid":     [1999, 2012],
-    "Chip Kelly":    [2013, 2015],
     "Doug Pederson": [2016, 2020],
     "Nick Sirianni": [2021, 2024]
   },
@@ -22,8 +18,8 @@
       "rows": [
         { "qualifier_text": "ANDY REID ERA (1999-2012)", "qualifier_badge": "SAME SEASON",
           "constraints": { "team": "Eagles", "era": "Andy Reid", "position_group": "skill" } },
-        { "qualifier_text": "CHIP KELLY OR PEDERSON ERA (2013-2020)", "qualifier_badge": "SAME SEASON",
-          "constraints": { "team": "Eagles", "era_any": ["Chip Kelly", "Doug Pederson"], "position_group": "skill" } },
+        { "qualifier_text": "2013-2020 SEASONS", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "Eagles", "year_min": 2013, "year_max": 2020, "position_group": "skill" } },
         { "qualifier_text": "SIRIANNI ERA (2021-PRESENT)", "qualifier_badge": "SAME SEASON",
           "constraints": { "team": "Eagles", "era": "Nick Sirianni", "position_group": "skill" } },
         { "qualifier_text": "NOT DRAFTED BY EAGLES", "qualifier_badge": "ANYTIME IN CAREER",
@@ -39,8 +35,8 @@
       "rows": [
         { "qualifier_text": "ANDY REID ERA (1999-2012)", "qualifier_badge": "SAME SEASON",
           "constraints": { "team": "Eagles", "era": "Andy Reid", "position_group": "pass_catcher" } },
-        { "qualifier_text": "SIRIANNI ERA - WR ONLY", "qualifier_badge": "SAME SEASON",
-          "constraints": { "team": "Eagles", "era": "Nick Sirianni", "position": "WR" } },
+        { "qualifier_text": "2021-PRESENT - WR ONLY", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "Eagles", "year_min": 2021, "position": "WR" } },
         { "qualifier_text": "TIGHT END", "qualifier_badge": "SAME SEASON",
           "constraints": { "team": "Eagles", "position": "TE" } },
         { "qualifier_text": "SUPER BOWL LII ROSTER", "qualifier_badge": "ANYTIME IN CAREER",
@@ -56,8 +52,8 @@
       "rows": [
         { "qualifier_text": "ANDY REID ERA (1999-2012)", "qualifier_badge": "SAME SEASON",
           "constraints": { "team": "Eagles", "era": "Andy Reid", "position_group": "defense" } },
-        { "qualifier_text": "SIRIANNI ERA (2021-PRESENT)", "qualifier_badge": "SAME SEASON",
-          "constraints": { "team": "Eagles", "era": "Nick Sirianni", "position_group": "defense" } },
+        { "qualifier_text": "2021-PRESENT SEASONS", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "Eagles", "year_min": 2021, "position_group": "defense" } },
         { "qualifier_text": "1ST ROUND PICK", "qualifier_badge": "ANYTIME IN CAREER",
           "constraints": { "draft_round": 1, "position_group": "defense" } },
         { "qualifier_text": "NOT DRAFTED BY EAGLES", "qualifier_badge": "ANYTIME IN CAREER",
@@ -73,8 +69,8 @@
       "rows": [
         { "qualifier_text": "ANDY REID ERA (1999-2012)", "qualifier_badge": "SAME SEASON",
           "constraints": { "team": "Eagles", "era": "Andy Reid", "position_group": "defense" } },
-        { "qualifier_text": "PEDERSON OR SIRIANNI ERA (2016-PRESENT)", "qualifier_badge": "SAME SEASON",
-          "constraints": { "team": "Eagles", "era_any": ["Doug Pederson", "Nick Sirianni"], "position_group": "defense" } },
+        { "qualifier_text": "2016-PRESENT SEASONS", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "Eagles", "year_min": 2016, "position_group": "defense" } },
         { "qualifier_text": "CORNERBACK", "qualifier_badge": "SAME SEASON",
           "constraints": { "team": "Eagles", "position": "CB" } },
         { "qualifier_text": "NOT DRAFTED BY EAGLES", "qualifier_badge": "ANYTIME IN CAREER",
@@ -90,8 +86,8 @@
       "rows": [
         { "qualifier_text": "ANDY REID ERA (1999-2012)", "qualifier_badge": "SAME SEASON",
           "constraints": { "team": "Eagles", "era": "Andy Reid", "position_group": "defense" } },
-        { "qualifier_text": "SIRIANNI ERA (2021-PRESENT)", "qualifier_badge": "SAME SEASON",
-          "constraints": { "team": "Eagles", "era": "Nick Sirianni", "position_group": "defense" } },
+        { "qualifier_text": "2021-PRESENT SEASONS", "qualifier_badge": "SAME SEASON",
+          "constraints": { "team": "Eagles", "year_min": 2021, "position_group": "defense" } },
         { "qualifier_text": "LINEBACKER", "qualifier_badge": "SAME SEASON",
           "constraints": { "team": "Eagles", "position": "LB" } },
         { "qualifier_text": "NOT DRAFTED BY EAGLES", "qualifier_badge": "ANYTIME IN CAREER",

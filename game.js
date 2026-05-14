@@ -247,6 +247,164 @@ function renderCompletionBanner() {
   `;
 }
 
+// ── SLAB RENDERER ─────────────────────────────────────────────────────────────
+// Translates row.constraints into the visual slabs: time, position, filter.
+// The renderer derives display from constraints directly — qualifier_text and
+// qualifier_badge in puzzles.json are no longer read.
+
+function prettify(s) {
+  return String(s).split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// Hand-curated Super Bowl roman labels for the years our data covers. Falls
+// back to the raw season year if a new SB year shows up without a mapping.
+const SB_LABELS = { 2017: 'LII', 2022: 'LVII', 2024: 'LIX' };
+function superBowlLabel(year) {
+  return SB_LABELS[year] || String(year);
+}
+
+// SAME SEASON when the row has any season-level constraint (team, year_min,
+// year_max, era, era_any). Otherwise the row is ANYTIME IN CAREER.
+function rowMode(c) {
+  if (c.team || c.year_min !== undefined || c.year_max !== undefined || c.era || c.era_any) {
+    return 'same';
+  }
+  return 'anytime';
+}
+
+function buildTimeSlab(c, mode) {
+  const slab = { mode: mode === 'same' ? 'Same Season' : 'Anytime in Career' };
+
+  if (c.era && ERAS[c.era]) {
+    slab.eraFlavor = c.era + ' Era';
+    slab.yearStart = ERAS[c.era][0];
+    slab.yearEnd = ERAS[c.era][1];
+  } else if (c.era_any && c.era_any.length) {
+    const ranges = c.era_any.map(e => ERAS[e]).filter(Boolean);
+    if (ranges.length) {
+      slab.yearStart = Math.min(...ranges.map(r => r[0]));
+      slab.yearEnd = Math.max(...ranges.map(r => r[1]));
+    }
+  } else {
+    if (c.year_min !== undefined) slab.yearStart = c.year_min;
+    if (c.year_max !== undefined) slab.yearEnd = c.year_max;
+  }
+
+  if (slab.yearStart === undefined && slab.yearEnd === undefined) {
+    slab.anyYear = true;
+  }
+  return slab;
+}
+
+function renderTimeSlab(slab) {
+  const parts = [];
+  if (slab.eraFlavor) {
+    parts.push(`<div class="era-flavor">${slab.eraFlavor}</div>`);
+  }
+  if (slab.anyYear) {
+    parts.push(`<div class="slab-value compact">Any Year</div>`);
+  } else if (slab.yearStart !== undefined && slab.yearEnd !== undefined) {
+    parts.push(`
+      <div class="year-stack">
+        <span class="yr">${slab.yearStart}</span>
+        <span class="conj">to</span>
+        <span class="yr">${slab.yearEnd}</span>
+      </div>`);
+  } else if (slab.yearStart !== undefined) {
+    // Open-ended (year_min only) — read as "2020 to now"
+    parts.push(`
+      <div class="year-stack">
+        <span class="yr">${slab.yearStart}</span>
+        <span class="conj">to</span>
+        <span class="yr">now</span>
+      </div>`);
+  } else if (slab.yearEnd !== undefined) {
+    parts.push(`
+      <div class="year-stack">
+        <span class="conj">up to</span>
+        <span class="yr">${slab.yearEnd}</span>
+      </div>`);
+  }
+  parts.push(`<span class="mode-tag">${slab.mode}</span>`);
+  return `<div class="slab slab-time">${parts.join('')}</div>`;
+}
+
+function renderPositionSlab(c) {
+  if (c.position) {
+    return `
+      <div class="slab slab-position">
+        <div class="slab-caption">Position</div>
+        <div class="slab-value">${c.position}</div>
+      </div>`;
+  }
+  if (c.position_group) {
+    return `
+      <div class="slab slab-position">
+        <div class="slab-caption">Position</div>
+        <div class="slab-value">${prettify(c.position_group)}</div>
+      </div>`;
+  }
+  return null;
+}
+
+// Returns the first applicable filter slab. Filter-style constraints are
+// player-pool predicates that aren't time- or position-related. Only one is
+// shown per row today; revisit if puzzles need to stack multiple filters.
+function renderFilterSlab(c) {
+  if (c.draft_round !== undefined) {
+    return filterSlabHtml('Drafted In', `${ordinal(c.draft_round)} Round`);
+  }
+  if (c.draft_round_not !== undefined) {
+    return filterSlabHtml('Drafted Outside', `${ordinal(c.draft_round_not)} Round`);
+  }
+  if (c.drafted_by) {
+    return filterSlabHtml('Drafted By', c.drafted_by);
+  }
+  if (c.drafted_by_not) {
+    return filterSlabHtml('Not Drafted By', c.drafted_by_not);
+  }
+  if (c.super_bowl !== undefined) {
+    return filterSlabHtml('Super Bowl', `${superBowlLabel(c.super_bowl)} Roster`);
+  }
+  return null;
+}
+
+function filterSlabHtml(caption, value) {
+  return `
+    <div class="slab slab-filter">
+      <div class="slab-caption">${caption}</div>
+      <div class="slab-value compact">${value}</div>
+    </div>`;
+}
+
+function renderConstraintStrip(i, constraints, showButton) {
+  const mode = rowMode(constraints);
+  const slabs = [renderTimeSlab(buildTimeSlab(constraints, mode))];
+
+  const pos = renderPositionSlab(constraints);
+  if (pos) slabs.push(pos);
+
+  const filter = renderFilterSlab(constraints);
+  if (filter) slabs.push(filter);
+
+  const buttonHtml = showButton
+    ? `<button class="add-btn" id="add-btn-${i}" onclick="openInput(${i})"><span style="font-size:16px">+</span> add player</button>`
+    : '';
+
+  const filterClass = filter ? ' has-filter' : '';
+  return `
+    <div class="row-constraints${filterClass}">
+      ${slabs.join('')}
+      ${buttonHtml}
+    </div>`;
+}
+
 function renderRow(i) {
   const board = document.getElementById('board');
   const state = rowStates[i];
@@ -256,24 +414,21 @@ function renderRow(i) {
   el.className = 'row' + (state.submitted ? ' completed' : '');
   el.id = `row-${i}`;
 
+  const constraintStrip = renderConstraintStrip(i, row.constraints, !state.submitted);
+  const expandContent = state.submitted ? renderResult(i) : renderInputForm(i);
+
   el.innerHTML = `
-    <div class="row-meta">
-      <div class="row-qualifier">${row.qualifier_text}</div>
-      <div class="row-badge">${row.qualifier_badge}</div>
-    </div>
-    <div class="row-action" id="row-action-${i}">
-      ${state.submitted ? renderResult(i) : renderInputArea(i)}
+    ${constraintStrip}
+    <div class="row-expand" id="row-action-${i}">
+      ${expandContent}
     </div>
   `;
 
   board.appendChild(el);
 }
 
-function renderInputArea(i) {
+function renderInputForm(i) {
   return `
-    <button class="add-btn" id="add-btn-${i}" onclick="openInput(${i})">
-      <span style="font-size:18px">+</span> add player
-    </button>
     <div class="input-form" id="form-${i}">
       <div class="input-row">
         <div class="input-wrap">
@@ -573,24 +728,171 @@ async function submitFeedback(event) {
   }
 }
 
+// ── TEAM PICKER ───────────────────────────────────────────────────────────────
+
+const ACTIVE_TEAM_LS_KEY = 'hometeam-statpad-active-team';
+
+function savedTeamId() {
+  try { return localStorage.getItem(ACTIVE_TEAM_LS_KEY); } catch (e) { return null; }
+}
+
+function rememberTeamId(teamId) {
+  try { localStorage.setItem(ACTIVE_TEAM_LS_KEY, teamId); } catch (e) {}
+}
+
+// Resolves the team to load on startup: saved-and-available first, else manifest default.
+function resolveStartupTeamId() {
+  const saved = savedTeamId();
+  if (saved) {
+    const t = MANIFEST.teams.find(x => x.id === saved);
+    if (t && t.available) return saved;
+  }
+  return MANIFEST.default_team;
+}
+
+async function loadTeamData(teamId) {
+  const [playersJson, puzzlesJson] = await Promise.all([
+    fetch(`data/${teamId}/players.json`).then(r => r.json()),
+    fetch(`data/${teamId}/puzzles.json`).then(r => r.json()),
+  ]);
+  PLAYERS = playersJson;
+  PUZZLES = puzzlesJson.puzzles;
+  ERAS = puzzlesJson.eras || {};
+  POSITION_GROUPS = puzzlesJson.position_groups || {};
+}
+
+function updateTeamLabel() {
+  const el = document.getElementById('tp-team-label');
+  if (el && ACTIVE_TEAM) el.textContent = ACTIVE_TEAM.short_name.toUpperCase();
+}
+
+// Push the active team's brand color into the CSS custom property the stylesheet
+// reads. Missing colors fall back to whatever's in the :root default so older
+// manifests without a colors block still render.
+function applyTeamTheme() {
+  if (!ACTIVE_TEAM || !ACTIVE_TEAM.colors) return;
+  const root = document.documentElement;
+  if (ACTIVE_TEAM.colors.primary) {
+    root.style.setProperty('--primary', ACTIVE_TEAM.colors.primary);
+  }
+}
+
+async function switchTeam(teamId) {
+  if (!MANIFEST) return;
+  const team = MANIFEST.teams.find(t => t.id === teamId);
+  if (!team || !team.available) return;
+  if (ACTIVE_TEAM && team.id === ACTIVE_TEAM.id) {
+    closeTeamPicker();
+    return;
+  }
+  ACTIVE_TEAM = team;
+  rememberTeamId(teamId);
+  try {
+    await loadTeamData(teamId);
+  } catch (err) {
+    console.error('Failed to load team data:', err);
+    document.getElementById('board').innerHTML =
+      `<div style="padding:20px;color:#ff6b6b">Failed to load ${team.short_name} data. Check the console.</div>`;
+    return;
+  }
+  updateTeamLabel();
+  applyTeamTheme();
+  initDatePicker();
+  loadPuzzleForDate(todayLocal());
+  closeTeamPicker();
+}
+
+function renderTeamPicker() {
+  const body = document.getElementById('team-picker-body');
+  if (!MANIFEST) { body.innerHTML = ''; return; }
+
+  // Group teams by sport, preserving manifest order within each sport.
+  const bySport = new Map();
+  for (const t of MANIFEST.teams) {
+    if (!bySport.has(t.sport)) bySport.set(t.sport, []);
+    bySport.get(t.sport).push(t);
+  }
+
+  const sections = [];
+  for (const [sport, teams] of bySport.entries()) {
+    const rows = teams.map(t => {
+      const isActive = ACTIVE_TEAM && t.id === ACTIVE_TEAM.id;
+      const status = isActive ? 'Playing' : (t.available ? 'Play' : 'Soon');
+      const disabled = !t.available ? 'disabled' : '';
+      const onClick = t.available ? `onclick="switchTeam('${t.id}')"` : '';
+      return `
+        <button class="team-option ${isActive ? 'active' : ''}" ${disabled} ${onClick}>
+          <span class="team-option-name">
+            <span>${t.short_name}</span>
+            <span class="team-option-sub">${t.name}</span>
+          </span>
+          <span class="team-option-status">${status}</span>
+        </button>`;
+    }).join('');
+    sections.push(`
+      <div class="sport-group">
+        <div class="sport-label">${sport}</div>
+        ${rows}
+      </div>
+    `);
+  }
+
+  // City bundles section (V2 — disabled placeholder so it's discoverable).
+  if (MANIFEST.city_groups && MANIFEST.city_groups.length) {
+    const cityRows = MANIFEST.city_groups.map(g => `
+      <button class="team-option" disabled>
+        <span class="team-option-name">
+          <span>${g.name}</span>
+          <span class="team-option-sub">${g.teams.length} teams</span>
+        </span>
+        <span class="team-option-status">Soon</span>
+      </button>`).join('');
+    sections.push(`
+      <div class="sport-group">
+        <div class="sport-label">City Bundles</div>
+        ${cityRows}
+      </div>
+    `);
+  }
+
+  body.innerHTML = sections.join('');
+}
+
+function openTeamPicker() {
+  renderTeamPicker();
+  const modal = document.getElementById('team-picker-modal');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.addEventListener('keydown', onTeamPickerKeydown);
+}
+
+function closeTeamPicker() {
+  const modal = document.getElementById('team-picker-modal');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.removeEventListener('keydown', onTeamPickerKeydown);
+}
+
+function onTeamPickerKeydown(e) {
+  if (e.key === 'Escape') closeTeamPicker();
+}
+
+function onTeamPickerOverlayClick(e) {
+  if (e.target.id === 'team-picker-modal') closeTeamPicker();
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 
 async function init() {
   try {
     MANIFEST = await fetch('data/manifest.json').then(r => r.json());
-    const teamId = MANIFEST.default_team;
+    const teamId = resolveStartupTeamId();
     ACTIVE_TEAM = MANIFEST.teams.find(t => t.id === teamId);
 
-    const [playersJson, puzzlesJson] = await Promise.all([
-      fetch(`data/${teamId}/players.json`).then(r => r.json()),
-      fetch(`data/${teamId}/puzzles.json`).then(r => r.json()),
-    ]);
+    await loadTeamData(teamId);
 
-    PLAYERS = playersJson;
-    PUZZLES = puzzlesJson.puzzles;
-    ERAS = puzzlesJson.eras || {};
-    POSITION_GROUPS = puzzlesJson.position_groups || {};
-
+    updateTeamLabel();
+    applyTeamTheme();
     initDatePicker();
     loadPuzzleForDate(todayLocal());
   } catch (err) {

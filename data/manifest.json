@@ -6,14 +6,28 @@
       "short_name": "Eagles",
       "sport": "NFL",
       "city": "philadelphia",
-      "available": true
+      "available": true,
+      "colors": {
+        "primary": "#004C54"
+      }
+    },
+    {
+      "id": "sixers",
+      "name": "Philadelphia 76ers",
+      "short_name": "76ers",
+      "sport": "NBA",
+      "city": "philadelphia",
+      "available": true,
+      "colors": {
+        "primary": "#006BB6"
+      }
     }
   ],
   "city_groups": [
     {
       "id": "philadelphia",
       "name": "Philadelphia",
-      "teams": ["eagles"],
+      "teams": ["eagles", "sixers"],
       "available": false
     }
   ],
