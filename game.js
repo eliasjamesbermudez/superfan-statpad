@@ -75,10 +75,10 @@ function getSeasonFailReason(season, c, player) {
     return `${seasonStr} wasn't in the ${c.era_any.join(' or ')} era.`;
   }
   if (c.year_min !== undefined && season.year < c.year_min) {
-    return `${seasonStr} is too early — must be ${c.year_min} or later.`;
+    return `${seasonStr} is too early. Must be ${c.year_min} or later.`;
   }
   if (c.year_max !== undefined && season.year > c.year_max) {
-    return `${seasonStr} is too late — must be ${c.year_max} or earlier.`;
+    return `${seasonStr} is too late. Must be ${c.year_max} or earlier.`;
   }
   return null;
 }
@@ -304,8 +304,8 @@ function yearOnlyLabel(season) {
   return formatSeason(season.year);
 }
 
-// Year-with-team label used in the result/leaderboard after submission — that's
-// where it becomes useful information rather than a hint.
+// Year-with-team label used in the result/leaderboard after submission, where
+// it becomes useful information rather than a hint.
 function seasonLabel(season) {
   return `${formatSeason(season.year)} (${season.team})`;
 }
@@ -403,7 +403,7 @@ function populateYears(i, player) {
   const errorEl = document.getElementById(`error-${i}`);
 
   // Show every year of the player's career, chronologically. We intentionally
-  // don't filter to "valid for this row" or sort by stat — that would
+  // don't filter to "valid for this row" or sort by stat; that would
   // telegraph the right answer. Wrong years are allowed; they just score 0.
   const seasons = [...player.seasons].sort((a, b) => a.year - b.year);
 
@@ -458,8 +458,8 @@ function submitRow(i) {
   }
 
   // Season-level constraints (era, team, year range) block submission and let
-  // the user pick again. The failure reason — "X wasn't on the Eagles in
-  // 2020-2021" — surfaces in the error spot so they know why it's invalid.
+  // the user pick again. The failure reason (e.g. "X wasn't on the Eagles in
+  // 2020-2021") surfaces in the error spot so they know why it's invalid.
   // A "poor guess" is a player+season that DO pass constraints but the stat
   // value happens to be 0; that's accepted (and scores 0).
   const failReason = getSeasonFailReason(season, row.constraints, player);
